@@ -1,7 +1,27 @@
-# -*- coding: utf-8 -*-
-# Copyright 2009-2016 Noviat
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# -*- encoding: utf-8 -*-
+##############################################################################
+#
+#    OpenERP, Open Source Management Solution
+#
+#    Copyright (c) 2013 Noviat nv/sa (www.noviat.com). All rights reserved.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+##############################################################################
+
 import xlwt
+import xlsxwriter
 from datetime import datetime
 from openerp.addons.report_xls.report_xls import report_xls
 from openerp.addons.report_xls.utils import rowcol_to_cell
@@ -18,7 +38,6 @@ _column_sizes = [
     ('journal', 12),
     ('account_code', 12),
     ('partner', 30),
-    ('ref', 30),
     ('label', 45),
     ('counterpart', 30),
     ('debit', 15),
@@ -34,7 +53,7 @@ class general_ledger_xls(report_xls):
 
     def generate_xls_report(self, _p, _xs, data, objects, wb):
 
-        ws = wb.add_sheet(_p.report_name[:31])
+        ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
         ws.portrait = 0  # Landscape
@@ -51,7 +70,7 @@ class general_ledger_xls(report_xls):
                                 False: _('No')}
 
         # Title
-        cell_style = xlwt.easyxf(_xs['xls_title'])
+        cell_style = wb.add_format({'bold':True})
         report_name = ' - '.join([_p.report_name.upper(),
                                  _p.company.partner_id.name,
                                  _p.company.currency_id.name])
@@ -59,38 +78,37 @@ class general_ledger_xls(report_xls):
             ('report_name', 1, 0, 'text', report_name),
         ]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
-        row_pos = self.xls_write_row(
-            ws, row_pos, row_data, row_style=cell_style)
+        row_pos = self.xls_write_row(ws, row_pos, row_data, row_style=cell_style)
 
         # write empty row to define column sizes
         c_sizes = self.column_sizes
         c_specs = [('empty%s' % i, 1, c_sizes[i], 'text', None)
                    for i in range(0, len(c_sizes))]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
-        row_pos = self.xls_write_row(
-            ws, row_pos, row_data, set_column_size=True)
-
+        row_pos = self.xls_write_row(ws, row_pos, row_data)
         # Header Table
         cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        #cell_style = xlwt.easyxf(cell_format)
+        #cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
         c_specs = [
             ('coa', 2, 0, 'text', _('Chart of Account')),
             ('fy', 1, 0, 'text', _('Fiscal Year')),
             ('df', 3, 0, 'text', _p.filter_form(data) ==
              'filter_date' and _('Dates Filter') or _('Periods Filter')),
             ('af', 1, 0, 'text', _('Accounts Filter')),
-            ('tm', 2, 0, 'text', _('Target Moves')),
-            ('ib', 2, 0, 'text', _('Initial Balance')),
+            ('tm', 2, 0, 'text',  _('Target Moves')),
+            ('ib', 2, 0, 'text',  _('Initial Balance')),
 
         ]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
-        row_pos = self.xls_write_row(
-            ws, row_pos, row_data, row_style=cell_style_center)
+        row_pos = self.xls_write_row(ws, row_pos, row_data, row_style=cell_style_center)
 
         cell_format = _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        #cell_style = xlwt.easyxf(cell_format)
+        cell_style = wb.add_format({'border':1})
+        cell_style_center = wb.add_format({'border':1,'align': 'center'})
         c_specs = [
             ('coa', 2, 0, 'text', _p.chart_account.name),
             ('fy', 1, 0, 'text', _p.fiscalyear.name if _p.fiscalyear else '-'),
@@ -116,29 +134,27 @@ class general_ledger_xls(report_xls):
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
         row_pos = self.xls_write_row(
             ws, row_pos, row_data, row_style=cell_style_center)
-        ws.set_horz_split_pos(row_pos)
+        #ws.set_horz_split_pos(row_pos)
+        ws.freeze_panes(row_pos, 0)
         row_pos += 1
 
         # Column Title Row
         cell_format = _xs['bold']
-        c_title_cell_style = xlwt.easyxf(cell_format)
+        c_title_cell_style = wb.add_format({'bold':True})
 
         # Column Header Row
         cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
-        c_hdr_cell_style = xlwt.easyxf(cell_format)
-        c_hdr_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        c_hdr_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
-        c_hdr_cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        c_hdr_cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        c_hdr_cell_style_right = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'right'})
+        c_hdr_cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
+        c_hdr_cell_style_decimal = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
+        c_hdr_cell_style_decimal.set_num_format('#,###.##')
 
         # Column Initial Balance Row
-        cell_format = _xs['italic'] + _xs['borders_all']
-        c_init_cell_style = xlwt.easyxf(cell_format)
-        c_init_cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
-
+        cell_format = wb.add_format({'italic': True,'border': 1})
+        c_init_cell_style = wb.add_format({'italic': True,'border': 1})
+        c_init_cell_style_decimal = wb.add_format({'italic': True,'border': 1,'align': 'center'})
+        c_init_cell_style_decimal.set_num_format('#,###.##')
         c_specs = [
             ('date', 1, 0, 'text', _('Date'), None, c_hdr_cell_style),
             ('period', 1, 0, 'text', _('Period'), None, c_hdr_cell_style),
@@ -147,7 +163,6 @@ class general_ledger_xls(report_xls):
             ('account_code', 1, 0, 'text',
              _('Account'), None, c_hdr_cell_style),
             ('partner', 1, 0, 'text', _('Partner'), None, c_hdr_cell_style),
-            ('ref', 1, 0, 'text', _('Reference'), None, c_hdr_cell_style),
             ('label', 1, 0, 'text', _('Label'), None, c_hdr_cell_style),
             ('counterpart', 1, 0, 'text',
              _('Counterpart'), None, c_hdr_cell_style),
@@ -168,15 +183,12 @@ class general_ledger_xls(report_xls):
 
         # cell styles for ledger lines
         ll_cell_format = _xs['borders_all']
-        ll_cell_style = xlwt.easyxf(ll_cell_format)
-        ll_cell_style_center = xlwt.easyxf(ll_cell_format + _xs['center'])
-        ll_cell_style_date = xlwt.easyxf(
-            ll_cell_format + _xs['left'],
-            num_format_str=report_xls.date_format)
-        ll_cell_style_decimal = xlwt.easyxf(
-            ll_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
-
+        ll_cell_style = wb.add_format({'border': 1})
+        ll_cell_style_center = wb.add_format({'italic': True,'border': 1,'align': 'center'})
+        ll_cell_style_date = wb.add_format({'italic': True,'border': 1,'align': 'left'})
+        ll_cell_style_date.set_num_format('dd/mm/yyyy')
+        ll_cell_style_decimal = wb.add_format({'italic': True,'border': 1,'align': 'right'})
+        ll_cell_style_decimal.set_num_format('#,###.##')
         cnt = 0
         for account in objects:
 
@@ -213,7 +225,7 @@ class general_ledger_xls(report_xls):
                     cumul_balance_curr = init_balance.get(
                         'init_balance_currency') or 0.0
                     c_specs = [('empty%s' % x, 1, 0, 'text', None)
-                               for x in range(7)]
+                               for x in range(6)]
                     c_specs += [
                         ('init_bal', 1, 0, 'text', _('Initial Balance')),
                         ('counterpart', 1, 0, 'text', None),
@@ -265,7 +277,6 @@ class general_ledger_xls(report_xls):
                         ('account_code', 1, 0, 'text', account.code),
                         ('partner', 1, 0, 'text',
                          line.get('partner_name') or ''),
-                        ('ref', 1, 0, 'text', line.get('lref')),
                         ('label', 1, 0, 'text', label),
                         ('counterpart', 1, 0, 'text',
                          line.get('counterparts') or ''),
@@ -290,17 +301,17 @@ class general_ledger_xls(report_xls):
                     row_pos = self.xls_write_row(
                         ws, row_pos, row_data, ll_cell_style)
 
-                debit_start = rowcol_to_cell(row_start, 9)
-                debit_end = rowcol_to_cell(row_pos - 1, 9)
+                debit_start = rowcol_to_cell(row_start, 8)
+                debit_end = rowcol_to_cell(row_pos - 1, 8)
                 debit_formula = 'SUM(' + debit_start + ':' + debit_end + ')'
-                credit_start = rowcol_to_cell(row_start, 10)
-                credit_end = rowcol_to_cell(row_pos - 1, 10)
+                credit_start = rowcol_to_cell(row_start, 9)
+                credit_end = rowcol_to_cell(row_pos - 1, 9)
                 credit_formula = 'SUM(' + credit_start + ':' + credit_end + ')'
-                balance_debit = rowcol_to_cell(row_pos, 9)
-                balance_credit = rowcol_to_cell(row_pos, 10)
+                balance_debit = rowcol_to_cell(row_pos, 8)
+                balance_credit = rowcol_to_cell(row_pos, 9)
                 balance_formula = balance_debit + '-' + balance_credit
                 c_specs = [
-                    ('acc_title', 8, 0, 'text',
+                    ('acc_title', 7, 0, 'text',
                      ' - '.join([account.code, account.name])),
                     ('cum_bal', 1, 0, 'text',
                      _('Cumulated Balance on Account'),
@@ -325,7 +336,6 @@ class general_ledger_xls(report_xls):
                 row_pos = self.xls_write_row(
                     ws, row_pos, row_data, c_hdr_cell_style)
                 row_pos += 1
-
 
 general_ledger_xls('report.account.account_report_general_ledger_xls',
                    'account.account',

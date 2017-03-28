@@ -1,7 +1,27 @@
-# -*- coding: utf-8 -*-
-# Copyright 2009-2016 Noviat
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+# -*- encoding: utf-8 -*-
+##############################################################################
+#
+#    OpenERP, Open Source Management Solution
+#
+#    Copyright (c) 2013 Noviat nv/sa (www.noviat.com). All rights reserved.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+##############################################################################
+
 import xlwt
+import xlsxwriter
 from openerp.addons.report_xls.report_xls import report_xls
 from openerp.addons.report_xls.utils import rowcol_to_cell
 from openerp.addons.account_financial_report_webkit.report.partner_balance \
@@ -18,8 +38,9 @@ def display_line(all_comparison_lines):
 class partners_balance_xls(report_xls):
     column_sizes = [12, 40, 25, 17, 17, 17, 17, 17]
 
-    def print_title(self, ws, _p, row_position, xlwt, _xs):
-        cell_style = xlwt.easyxf(_xs['xls_title'])
+    def print_title(self, ws, _p, row_position, wb, _xs):
+        cell_style = wb.add_format({'bold':True})
+
         report_name = ' - '.join([_p.report_name.upper(),
                                  _p.company.partner_id.name,
                                  _p.company.currency_id.name])
@@ -36,14 +57,15 @@ class partners_balance_xls(report_xls):
         c_specs = [('empty%s' % i, 1, c_sizes[i], 'text', None)
                    for i in range(0, len(c_sizes))]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
-        row_position = self.xls_write_row(
-            ws, row_position, row_data, set_column_size=True)
+        row_position = self.xls_write_row(ws, row_position, row_data)
         return row_position
 
-    def print_header_titles(self, ws, _p, data, row_position, xlwt, _xs):
-        cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+    def print_header_titles(self, ws, _p, data, row_position, wb, _xs):
+        #cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
+        #cell_style = xlwt.easyxf(cell_format)
+        #cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
 
         c_specs = [
             ('fy', 1, 0, 'text', _('Fiscal Year'), None, cell_style_center),
@@ -65,11 +87,11 @@ class partners_balance_xls(report_xls):
             ws, row_position, row_data, row_style=cell_style)
         return row_position
 
-    def print_header_data(self, ws, _p, data, row_position, xlwt, _xs,
+    def print_header_data(self, ws, _p, data, row_position, wb, _xs,
                           initial_balance_text):
-        cell_format = _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'border':1})
+        cell_style_center = wb.add_format({'border':1,'align': 'center'})
+
         c_specs = [
             ('fy', 1, 0, 'text', _p.fiscalyear.name if _p.fiscalyear else '-',
              None, cell_style_center),
@@ -103,16 +125,15 @@ class partners_balance_xls(report_xls):
             ws, row_position, row_data, row_style=cell_style)
         return row_position
 
-    def print_comparison_header(self, _xs, xlwt, row_position, _p, ws,
+    def print_comparison_header(self, _xs, wb, row_position, _p, ws,
                                 initial_balance_text):
-        cell_format_ct = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
-        cell_style_ct = xlwt.easyxf(cell_format_ct)
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
+
         c_specs = [('ct', 7, 0, 'text', _('Comparisons'))]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
         row_position = self.xls_write_row(
             ws, row_position, row_data, row_style=cell_style_ct)
-        cell_format = _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style_center = xlwt.easyxf(cell_format)
         for index, params in enumerate(_p.comp_params):
             c_specs = [
                 ('c', 2, 0, 'text', _('Comparison') + str(index + 1) +
@@ -138,12 +159,11 @@ class partners_balance_xls(report_xls):
                 ws, row_position, row_data, row_style=cell_style_center)
         return row_position
 
-    def print_account_header(self, ws, _p, _xs, xlwt, row_position):
-        cell_format = _xs['bold'] + _xs['fill'] + \
-            _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+    def print_account_header(self, ws, _p, _xs, wb, row_position):
+        cell_style = wb.add_format({'border':1})
+        cell_style_center = wb.add_format({'border':1,'align': 'center'})
+        cell_style_right = wb.add_format({'border':1,'align': 'right'})
+
         if len(_p.comp_params) == 2:
             account_span = 3
         else:
@@ -193,10 +213,10 @@ class partners_balance_xls(report_xls):
         return row_position
 
     def print_row_code_account(self, ws, current_account, row_position, _xs,
-                               xlwt):
-        cell_format = _xs['xls_title'] + _xs['bold'] + \
-            _xs['fill'] + _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
+                               wb):
+        cell_style = wb.add_format({'border':1})
+        cell_style_center = wb.add_format({'border':1,'align': 'center'})
+
         c_specs = [
             ('acc_title', 7, 0, 'text', ' - '.join([current_account.code,
                                                     current_account.name])), ]
@@ -205,14 +225,13 @@ class partners_balance_xls(report_xls):
             ws, row_position, row_data, cell_style)
         return row_position
 
-    def print_account_totals(self, _xs, xlwt, ws, row_start_account,
+    def print_account_totals(self, _xs, wb, ws, row_start_account,
                              row_position, current_account, _p):
-        cell_format = _xs['bold'] + _xs['fill'] + \
-            _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        cell_style = wb.add_format({'border':1})
+        cell_style_center = wb.add_format({'border':1,'align': 'center'})
+        cell_style_decimal = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
+        cell_style_decimal.set_num_format('#,###.##')
+
         c_specs = [
             ('acc_title', 2, 0, 'text', current_account.name),
             ('code', 1, 0, 'text', current_account.code),
@@ -240,7 +259,7 @@ class partners_balance_xls(report_xls):
     def generate_xls_report(self, _p, _xs, data, objects, wb):
 
         # Initialisations
-        ws = wb.add_sheet(_p.report_name[:31])
+        ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
         ws.portrait = 0  # Landscape
@@ -250,12 +269,12 @@ class partners_balance_xls(report_xls):
         ws.footer_str = self.xls_footers['standard']
 
         # Print Title
-        row_pos = self.print_title(ws, _p, row_pos, xlwt, _xs)
+        row_pos = self.print_title(ws, _p, row_pos, wb, _xs)
         # Print empty row to define column sizes
         row_pos = self.print_empty_row(ws, row_pos)
         # Print Header Table titles (Fiscal Year - Accounts Filter - Periods
         # Filter...)
-        row_pos = self.print_header_titles(ws, _p, data, row_pos, xlwt, _xs)
+        row_pos = self.print_header_titles(ws, _p, data, row_pos, wb, _xs)
 
         initial_balance_text = {
             'initial_balance': _('Computed'),
@@ -263,22 +282,21 @@ class partners_balance_xls(report_xls):
             False: _('No')}  # cf. account_report_partner_balance.mako
         # Print Header Table data
         row_pos = self.print_header_data(
-            ws, _p, data, row_pos, xlwt, _xs, initial_balance_text)
+            ws, _p, data, row_pos, wb, _xs, initial_balance_text)
         # Print comparison header table
         if _p.comparison_mode in ('single', 'multiple'):
             row_pos += 1
             row_pos = self.print_comparison_header(
-                _xs, xlwt, row_pos, _p, ws, initial_balance_text)
+                _xs, wb, row_pos, _p, ws, initial_balance_text)
 
         # Freeze the line
-        ws.set_horz_split_pos(row_pos)
+#        ws.set_horz_split_pos(row_pos)
+        ws.freeze_panes(row_pos, 0)
 
         # cell styles for account data
-        regular_cell_format = _xs['borders_all']
-        regular_cell_style = xlwt.easyxf(regular_cell_format)
-        regular_cell_style_decimal = xlwt.easyxf(
-            regular_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        regular_cell_format = wb.add_format({'border':1})
+        regular_cell_style_decimal = wb.add_format({'border':1,'align':'right'})
+        regular_cell_style_decimal.set_num_format('#,###.##')
 
         row_pos += 1
         for current_account in objects:
@@ -312,12 +330,12 @@ class partners_balance_xls(report_xls):
 
             # print row: Code - Account name
             row_pos = self.print_row_code_account(
-                ws, current_account, row_pos, _xs, xlwt)
+                ws, current_account, row_pos, _xs, wb)
             row_account_start = row_pos
             # Print row: Titles "Account/Partner Name-Code/ref-Initial
             # Balance-Debit-Credit-Balance" or  "Account/Partner
             # Name-Code/ref-Balance Year-Balance Year2-Balance C2-Balance C3"
-            row_pos = self.print_account_header(ws, _p, _xs, xlwt, row_pos)
+            row_pos = self.print_account_header(ws, _p, _xs, wb, row_pos)
 
             for (partner_code_name, partner_id, partner_ref, partner_name) \
                     in partners_order:
@@ -402,12 +420,12 @@ class partners_balance_xls(report_xls):
                                      int(round(percent_diff))), ]
                 row_data = self.xls_row_template(
                     c_specs, [x[0] for x in c_specs])
+                regular_cell_style={}
                 row_pos = self.xls_write_row(
                     ws, row_pos, row_data, regular_cell_style)
 
             row_pos = self.print_account_totals(
-                _xs, xlwt, ws, row_account_start, row_pos, current_account, _p)
-
+                _xs, wb, ws, row_account_start, row_pos, current_account, _p)
 
 partners_balance_xls('report.account.account_report_partner_balance_xls',
                      'account.account',
