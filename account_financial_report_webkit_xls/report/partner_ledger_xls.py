@@ -2,6 +2,7 @@
 # Copyright 2009-2016 Noviat
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import xlwt
+import xlsxwriter
 from datetime import datetime
 from openerp.addons.report_xls.report_xls import report_xls
 from openerp.addons.report_xls.utils import rowcol_to_cell
@@ -32,7 +33,7 @@ class partner_ledger_xls(report_xls):
 
     def generate_xls_report(self, _p, _xs, data, objects, wb):
 
-        ws = wb.add_sheet(_p.report_name[:31])
+        ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
         ws.portrait = 0  # Landscape
@@ -49,7 +50,8 @@ class partner_ledger_xls(report_xls):
                                 False: _('No')}
 
         # Title
-        cell_style = xlwt.easyxf(_xs['xls_title'])
+        # cell_style = xlwt.easyxf(_xs['xls_title'])
+        cell_style = wb.add_format({'bold': True})
         report_name = ' - '.join([_p.report_name.upper(),
                                  _p.company.partner_id.name,
                                  _p.company.currency_id.name])
@@ -73,8 +75,13 @@ class partner_ledger_xls(report_xls):
         if _p.amount_currency(data):
             nbr_columns = 12
         cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_style = xlwt.easyxf(cell_format)
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5',
+                                    'font_color': 'white', 'border': 1})
+        # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style_center = wb.add_format(
+            {'bold': True, 'bg_color': '538DD5',
+             'font_color': 'white', 'border': 1, 'align': 'center'})
         c_specs = [
             ('coa', 2, 0, 'text', _('Chart of Account')),
             ('fy', 1, 0, 'text', _('Fiscal Year')),
@@ -90,8 +97,10 @@ class partner_ledger_xls(report_xls):
             ws, row_pos, row_data, row_style=cell_style_center)
 
         cell_format = _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_style = xlwt.easyxf(cell_format)
+        cell_style = wb.add_format({'border': 1})
+        # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style_center = wb.add_format({'border': 1, 'align': 'center'})
         c_specs = [
             ('coa', 2, 0, 'text', _p.chart_account.name),
             ('fy', 1, 0, 'text', _p.fiscalyear.name if _p.fiscalyear else '-'),
@@ -117,47 +126,80 @@ class partner_ledger_xls(report_xls):
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
         row_pos = self.xls_write_row(
             ws, row_pos, row_data, row_style=cell_style_center)
-        ws.set_horz_split_pos(row_pos)
+        # ws.set_horz_split_pos(row_pos)
         row_pos += 1
 
         # Account Title Row
-        cell_format = _xs['xls_title'] + _xs['bold'] + \
-            _xs['fill'] + _xs['borders_all']
-        account_cell_style = xlwt.easyxf(cell_format)
-        account_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        account_cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        # cell_format = _xs['xls_title'] + _xs['bold'] + \
+        #     _xs['fill'] + _xs['borders_all']
+        cell_format = {'bold': True, 'bg_color': '538DD5',
+                       'font_color': 'white', 'border': 1}
+        # account_cell_style = xlwt.easyxf(cell_format)
+        account_cell_style = wb.add_format(cell_format)
+        # account_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
+        cell_format_right = cell_format.copy()
+        cell_format_right = cell_format_right.update({'align': 'right'})
+        account_cell_style_right = wb.add_format(cell_format_right)
+        # account_cell_style_decimal = xlwt.easyxf(
+        #     cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        account_cell_style_decimal = wb.add_format(cell_format_right)
+        account_cell_style_decimal.set_num_format(report_xls.decimal_format)
 
         # Column Title Row
-        cell_format = _xs['bold']
-        c_title_cell_style = xlwt.easyxf(cell_format)
+        # cell_format = _xs['bold']
+        cell_format = {'bold': True}
+        # c_title_cell_style = xlwt.easyxf(cell_format)
+        c_title_cell_style = wb.add_format(cell_format)
 
         # Column Header Row
-        cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
-        c_hdr_cell_style = xlwt.easyxf(cell_format)
-        c_hdr_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        c_hdr_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
+        cell_format.update(
+            {'border': 1, 'bg_color': '538DD5', 'font_color': 'white'})
+        # c_hdr_cell_style = xlwt.easyxf(cell_format)
+        c_hdr_cell_style = wb.add_format(cell_format)
+        # c_hdr_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
+        c_hdr_cell_style_right = wb.add_format(cell_format_right)
+        cell_format_center = cell_format_right.copy()
+        cell_format_center = cell_format_center.update({'align': 'center'})
+        # c_hdr_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        c_hdr_cell_style_center = wb.add_format(cell_format_center)
 
         # Column Initial Balance Row
-        cell_format = _xs['italic'] + _xs['borders_all']
-        c_init_cell_style = xlwt.easyxf(cell_format)
-        c_init_cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        # cell_format = _xs['italic'] + _xs['borders_all']
+        cell_format = {'italic': True, 'border': 1}
+        # c_init_cell_style = xlwt.easyxf(cell_format)
+        c_init_cell_style = wb.add_format(cell_format)
+        # c_init_cell_style_decimal = xlwt.easyxf(
+        #     cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        c_init_cell_style_decimal = wb.add_format(cell_format.update(
+            {'align': 'right'}))
+        c_init_cell_style_decimal.set_num_format(report_xls.decimal_format)
 
         # Column Cumulated balance Row
-        cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
-        c_cumul_cell_style = xlwt.easyxf(cell_format)
-        c_cumul_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        c_cumul_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
-        c_cumul_cell_style_decimal = xlwt.easyxf(
-            cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
-
+        # cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
+        cell_format = {'bold': True, 'border': 1, 'bg_color': '538DD5',
+                       'font_color': 'white'}
+        # c_cumul_cell_style = xlwt.easyxf(cell_format)
+        c_cumul_cell_style = wb.add_format(cell_format)
+        # c_cumul_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
+        c_cumul_cell_style_right = wb.add_format(cell_format.update(
+            {'align': 'right'}))
+        # c_cumul_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        c_cumul_cell_style_center = wb.add_format(cell_format.update(
+            {'align': 'center'}))
+        # c_cumul_cell_style_decimal = xlwt.easyxf(
+        #     cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        c_cumul_cell_style_decimal = wb.add_format(cell_format.update(
+            {'align': 'right'}))
+        c_cumul_cell_style_decimal.set_num_format(report_xls.decimal_format)
         # Column Partner Row
-        cell_format = _xs['bold']
-        c_part_cell_style = xlwt.easyxf(cell_format)
+        # cell_format = _xs['bold']
+        cell_format = {'bold': True}
+        # c_part_cell_style = xlwt.easyxf(cell_format)
+        c_part_cell_style = wb.add_format(cell_format)
 
         c_specs = [
             ('date', 1, 0, 'text', _('Date'), None, c_hdr_cell_style),
@@ -183,15 +225,25 @@ class partner_ledger_xls(report_xls):
         c_hdr_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
 
         # cell styles for ledger lines
-        ll_cell_format = _xs['borders_all']
-        ll_cell_style = xlwt.easyxf(ll_cell_format)
-        ll_cell_style_center = xlwt.easyxf(ll_cell_format + _xs['center'])
-        ll_cell_style_date = xlwt.easyxf(
-            ll_cell_format + _xs['left'],
-            num_format_str=report_xls.date_format)
-        ll_cell_style_decimal = xlwt.easyxf(
-            ll_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+        # ll_cell_format = _xs['borders_all']
+        ll_cell_format = {'border': 1}
+        # ll_cell_style = xlwt.easyxf(ll_cell_format)
+        ll_cell_style = wb.add_format(ll_cell_format)
+        # ll_cell_style_center = xlwt.easyxf(ll_cell_format + _xs['center'])
+        ll_cell_style_center = wb.add_format(ll_cell_format.update(
+            {'align': 'center'}))
+        # ll_cell_style_date = xlwt.easyxf(
+        #     ll_cell_format + _xs['left'],
+        #     num_format_str=report_xls.date_format)
+        ll_cell_style_date = wb.add_format(ll_cell_format.update(
+            {'align': 'left'}))
+        ll_cell_style_date.set_num_format(report_xls.date_format)
+        # ll_cell_style_decimal = xlwt.easyxf(
+        #     ll_cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        ll_cell_style_decimal = wb.add_format(ll_cell_format.update(
+            {'align': 'right'}))
+        ll_cell_style_decimal.set_num_format(report_xls.decimal_format)
 
         cnt = 0
         for account in objects:
