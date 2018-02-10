@@ -3,11 +3,15 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import xlwt
 from datetime import datetime
-from openerp.addons.report_xls.report_xls import report_xls
-from openerp.addons.report_xls.utils import rowcol_to_cell
+from openerp.addons.reportXlsxx.report.reportXlsxx import reportXlsx
+from openerp.addons.reportXlsx.utils import rowcol_to_cell
 from openerp.addons.account_financial_report_webkit.report.partners_ledger \
     import PartnersLedgerWebkit
 from openerp.tools.translate import _
+try:
+    import xlsxwriter
+except ImportError:
+    _logger.debug('Can not import xlsxwriter`.')
 # import logging
 # _logger = logging.getLogger(__name__)
 
@@ -27,12 +31,13 @@ _column_sizes = [
 ]
 
 
-class partner_ledger_xls(report_xls):
+class partnerLedgerXlsx(reportXlsx):
     column_sizes = [x[1] for x in _column_sizes]
 
-    def generate_xls_report(self, _p, _xs, data, objects, wb):
+    # def generate_xlsx_report(self, _p, _xs, data, objects, wb):
+    def generate_xlsx_report(self, wb, data, objs):
 
-        ws = wb.add_sheet(_p.report_name[:31])
+        ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
         ws.portrait = 0  # Landscape
@@ -127,7 +132,7 @@ class partner_ledger_xls(report_xls):
         account_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
         account_cell_style_decimal = xlwt.easyxf(
             cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+            num_format_str=reportXlsx.decimal_format)
 
         # Column Title Row
         cell_format = _xs['bold']
@@ -144,7 +149,7 @@ class partner_ledger_xls(report_xls):
         c_init_cell_style = xlwt.easyxf(cell_format)
         c_init_cell_style_decimal = xlwt.easyxf(
             cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+            num_format_str=reportXlsx.decimal_format)
 
         # Column Cumulated balance Row
         cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
@@ -153,7 +158,7 @@ class partner_ledger_xls(report_xls):
         c_cumul_cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
         c_cumul_cell_style_decimal = xlwt.easyxf(
             cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+            num_format_str=reportXlsx.decimal_format)
 
         # Column Partner Row
         cell_format = _xs['bold']
@@ -188,10 +193,10 @@ class partner_ledger_xls(report_xls):
         ll_cell_style_center = xlwt.easyxf(ll_cell_format + _xs['center'])
         ll_cell_style_date = xlwt.easyxf(
             ll_cell_format + _xs['left'],
-            num_format_str=report_xls.date_format)
+            num_format_str=reportXlsx.date_format)
         ll_cell_style_decimal = xlwt.easyxf(
             ll_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
+            num_format_str=reportXlsx.decimal_format)
 
         cnt = 0
         for account in objects:
@@ -438,6 +443,6 @@ class partner_ledger_xls(report_xls):
                 row_pos += 2
 
 
-partner_ledger_xls('report.account.account_report_partner_ledger_xls',
-                   'account.account',
-                   parser=PartnersLedgerWebkit)
+partnerLedgerXlsx('report.account.account_report_partner_ledger_xls',
+                  'account.account',
+                  parser=PartnersLedgerWebkit)
