@@ -2,21 +2,36 @@
 # Copyright 2009-2016 Noviat
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import xlwt
+import xlsxwriter
 from openerp.addons.report_xls.report_xls import report_xls
 from openerp.addons.report_xls.utils import rowcol_to_cell
 from openerp.addons.account_financial_report_webkit.report.trial_balance \
     import TrialBalanceWebkit
 from openerp.tools.translate import _
-# import logging
-# _logger = logging.getLogger(__name__)
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class trial_balance_xls(report_xls):
     column_sizes = [12, 60, 17, 17, 17, 17, 17, 17]
 
+    def print_title(self, ws, _p, row_position, wb, _xs):
+        cell_style = wb.add_format({'bold':True})
+
+        report_name = ' - '.join([_p.report_name.upper(),
+                                 _p.company.partner_id.name,
+                                 _p.company.currency_id.name])
+        c_specs = [
+            ('report_name', 1, 0, 'text', report_name),
+        ]
+        row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
+        row_position = self.xls_write_row(
+            ws, row_position, row_data, row_style=cell_style)
+        return row_position
+
     def generate_xls_report(self, _p, _xs, data, objects, wb):
 
-        ws = wb.add_sheet(_p.report_name[:31])
+        ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
         ws.portrait = 0  # Landscape
@@ -33,16 +48,17 @@ class trial_balance_xls(report_xls):
                                 False: _('No')}
 
         # Title
-        cell_style = xlwt.easyxf(_xs['xls_title'])
-        report_name = ' - '.join([_p.report_name.upper(),
-                                 _p.company.partner_id.name,
-                                 _p.company.currency_id.name])
-        c_specs = [
-            ('report_name', 1, 0, 'text', report_name),
-        ]
-        row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
-        row_pos = self.xls_write_row(
-            ws, row_pos, row_data, row_style=cell_style)
+        row_pos = self.print_title(ws, _p, row_pos, wb, _xs)
+        # cell_style = xlwt.easyxf(_xs['xls_title'])
+        # report_name = ' - '.join([_p.report_name.upper(),
+        #                          _p.company.partner_id.name,
+        #                          _p.company.currency_id.name])
+        # c_specs = [
+        #     ('report_name', 1, 0, 'text', report_name),
+        # ]
+        # row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
+        # row_pos = self.xls_write_row(
+        #     ws, row_pos, row_data, row_style=cell_style)
 
         # write empty row to define column sizes
         c_sizes = self.column_sizes
@@ -53,9 +69,11 @@ class trial_balance_xls(report_xls):
             ws, row_pos, row_data, set_column_size=True)
 
         # Header Table
-        cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
+        # cell_style = xlwt.easyxf(cell_format)
+        # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
         c_specs = [
             ('fy', 1, 0, 'text', _('Fiscal Year')),
             ('af', 2, 0, 'text', _('Accounts Filter')),
@@ -71,9 +89,11 @@ class trial_balance_xls(report_xls):
         row_pos = self.xls_write_row(
             ws, row_pos, row_data, row_style=cell_style)
 
-        cell_format = _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_format = _xs['borders_all'] + _xs['wrap'] + _xs['top']
+        # cell_style = xlwt.easyxf(cell_format)
+        # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'border': 1, 'text_wrap': 1, 'top': 1})
+        cell_style_center = wb.add_format({'border': 1, 'text_wrap': 1, 'top': 1, 'align': 'center'})
         c_specs = [
             ('fy', 1, 0, 'text', _p.fiscalyear.name if _p.fiscalyear else '-'),
             ('af', 2, 0, 'text', _p.accounts(data) and ', '.join(
@@ -141,11 +161,14 @@ class trial_balance_xls(report_xls):
         row_pos += 1
 
         # Column Header Row
-        cell_format = _xs['bold'] + _xs['fill_blue'] + \
-            _xs['borders_all'] + _xs['wrap'] + _xs['top']
-        cell_style = xlwt.easyxf(cell_format)
-        cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
-        cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        # cell_format = _xs['bold'] + _xs['fill_blue'] + \
+        #     _xs['borders_all'] + _xs['wrap'] + _xs['top']
+        # cell_style = xlwt.easyxf(cell_format)
+        # cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
+        # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
+        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1})
+        cell_style_right = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'right'})
+        cell_style_center = wb.add_format({'bold': True, 'bg_color': '538DD5', 'font_color': 'white','border': 1,'align': 'center'})
         if len(_p.comp_params) == 2:
             account_span = 3
         else:
@@ -191,30 +214,45 @@ class trial_balance_xls(report_xls):
                     ]
         c_specs += [('type', 1, 0, 'text', _('Type'), None, cell_style_center)]
         row_data = self.xls_row_template(c_specs, [x[0] for x in c_specs])
+        _logger.info('\n=== cell_style_2 = %s' % cell_style)
         row_pos = self.xls_write_row(
             ws, row_pos, row_data, row_style=cell_style)
-        ws.set_horz_split_pos(row_pos)
+        # ws.set_horz_split_pos(row_pos)
+        ws.freeze_panes(row_pos, 0)
 
         last_child_consol_ids = []
 
         # cell styles for account data
-        view_cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
-        view_cell_style = xlwt.easyxf(view_cell_format)
-        view_cell_style_center = xlwt.easyxf(view_cell_format + _xs['center'])
-        view_cell_style_decimal = xlwt.easyxf(
-            view_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
-        view_cell_style_pct = xlwt.easyxf(
-            view_cell_format + _xs['center'], num_format_str='0')
-        regular_cell_format = _xs['borders_all']
-        regular_cell_style = xlwt.easyxf(regular_cell_format)
-        regular_cell_style_center = xlwt.easyxf(
-            regular_cell_format + _xs['center'])
-        regular_cell_style_decimal = xlwt.easyxf(
-            regular_cell_format + _xs['right'],
-            num_format_str=report_xls.decimal_format)
-        regular_cell_style_pct = xlwt.easyxf(
-            regular_cell_format + _xs['center'], num_format_str='0')
+        # view_cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
+        # view_cell_style = xlwt.easyxf(view_cell_format)
+        # view_cell_style_center = xlwt.easyxf(view_cell_format + _xs['center'])
+        # view_cell_style_decimal = xlwt.easyxf(
+        #     view_cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        # view_cell_style_pct = xlwt.easyxf(
+        #     view_cell_format + _xs['center'], num_format_str='0')
+        # regular_cell_format = _xs['borders_all']
+        # regular_cell_style = xlwt.easyxf(regular_cell_format)
+        # regular_cell_style_center = xlwt.easyxf(
+        #     regular_cell_format + _xs['center'])
+        # regular_cell_style_decimal = xlwt.easyxf(
+        #     regular_cell_format + _xs['right'],
+        #     num_format_str=report_xls.decimal_format)
+        # regular_cell_style_pct = xlwt.easyxf(
+        #     regular_cell_format + _xs['center'], num_format_str='0')
+
+        view_cell_format = {'bold': True, 'border': 1}
+        view_cell_style = wb.add_format(view_cell_format)
+        view_cell_style_center = wb.add_format({'bold': True, 'border': 1, 'align': 'center'})
+        view_cell_style_decimal = wb.add_format({
+            'bold': True, 'border': 1, 'align': 'right', 'num_format': report_xls.decimal_format        })
+        view_cell_style_pct = wb.add_format({'bold': True, 'border': 1, 'align': 'center', 'num_format': '0'})
+        regular_cell_style = wb.add_format({'border': 1})
+        regular_cell_style_center = wb.add_format({'border': 1, 'align': 'center'})
+        regular_cell_style_decimal = wb.add_format({
+            'border': 1, 'align': 'right', 'num_format': report_xls.decimal_format})
+        regular_cell_style_pct = wb.add_format({'border': 1, 'align': 'center', 'num_format': '0'})
+
 
         for current_account in objects:
 
