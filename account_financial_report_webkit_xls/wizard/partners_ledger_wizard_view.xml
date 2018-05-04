@@ -15,6 +15,11 @@
           <xpath expr="/form/group[@col='4']" position='attributes'>
             <attribute name="col">6</attribute>
           </xpath>
+          <page name="partners" position="after">
+              <page string="Filter on Accounts" name="acc_ids">
+                  <field name="acc_ids"/>
+              </page>
+          </page>
           <button string="Print" position="after">
             <button icon="gtk-execute" name="xls_export" string="Export" type="object" context="{'xls_export':1}" colspan="2"/>
           </button>
