@@ -17,7 +17,7 @@
           </xpath>
           <page name="partners" position="after">
               <page string="Filter on Accounts" name="acc_ids">
-                  <field name="acc_ids"/>
+                  <field name="acc_ids" context="{'search_default_tiers':1}"/>
               </page>
           </page>
           <button string="Print" position="after">

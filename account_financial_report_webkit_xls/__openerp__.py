@@ -43,6 +43,7 @@
         'wizard/partners_ledger_wizard_view.xml',
         'wizard/partners_balance_wizard_view.xml',
         'wizard/open_invoices_wizard_view.xml',
+        'views/account_views.xml',
     ],
     'test': ['tests/general_ledger.yml',
              'tests/partner_ledger.yml',

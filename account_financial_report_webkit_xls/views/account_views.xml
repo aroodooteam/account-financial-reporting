@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="view_account_search_inh0" model="ir.ui.view">
+            <field name="name">account.account.search</field>
+            <field name="model">account.account</field>
+            <field name="type">search</field>
+            <field name="inherit_id" ref="account.view_account_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <filter icon="terp-purchase" string="Tiers Accounts" name="tiers" domain="[('code','in',('233500','233505','233507','233600','233603','233605','251201','251501','400000','400800','404000','408000','411100','411200','423000','423001','424800','424850','424890','425000','425100','425200','426000','426100','428608','465000','466000','466010','466050','466200','466550'))]"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</openerp>
