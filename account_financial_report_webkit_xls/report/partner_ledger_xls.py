@@ -76,11 +76,11 @@ class partner_ledger_xls(report_xls):
             nbr_columns = 12
         cell_format = _xs['bold'] + _xs['fill_blue'] + _xs['borders_all']
         # cell_style = xlwt.easyxf(cell_format)
-        cell_style = wb.add_format({'bold': True, 'bg_color': '538DD5',
+        cell_style = wb.add_format({'bold': True, 'bg_color': '1D5C42',
                                     'font_color': 'white', 'border': 1})
         # cell_style_center = xlwt.easyxf(cell_format + _xs['center'])
         cell_style_center = wb.add_format(
-            {'bold': True, 'bg_color': '538DD5',
+            {'bold': True, 'bg_color': '1D5C42',
              'font_color': 'white', 'border': 1, 'align': 'center'})
         c_specs = [
             ('coa', 2, 0, 'text', _('Chart of Account')),
@@ -132,7 +132,7 @@ class partner_ledger_xls(report_xls):
         # Account Title Row
         # cell_format = _xs['xls_title'] + _xs['bold'] + \
         #     _xs['fill'] + _xs['borders_all']
-        cell_format = {'bold': True, 'bg_color': '538DD5',
+        cell_format = {'bold': True, 'bg_color': '1D5C42',
                        'font_color': 'white', 'border': 1}
         # account_cell_style = xlwt.easyxf(cell_format)
         account_cell_style = wb.add_format(cell_format)
@@ -155,7 +155,7 @@ class partner_ledger_xls(report_xls):
         # Column Header Row
         # cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
         cell_format.update(
-            {'border': 1, 'bg_color': '538DD5', 'font_color': 'white'})
+            {'border': 1, 'bg_color': '1D5C42', 'font_color': 'white'})
         # c_hdr_cell_style = xlwt.easyxf(cell_format)
         c_hdr_cell_style = wb.add_format(cell_format)
         # c_hdr_cell_style_right = xlwt.easyxf(cell_format + _xs['right'])
@@ -180,7 +180,7 @@ class partner_ledger_xls(report_xls):
 
         # Column Cumulated balance Row
         # cell_format = _xs['bold'] + _xs['fill'] + _xs['borders_all']
-        cell_format = {'bold': True, 'border': 1, 'bg_color': '538DD5',
+        cell_format = {'bold': True, 'border': 1, 'bg_color': '1D5C42',
                        'font_color': 'white'}
         # c_cumul_cell_style = xlwt.easyxf(cell_format)
         c_cumul_cell_style = wb.add_format(cell_format)
@@ -489,6 +489,7 @@ class partner_ledger_xls(report_xls):
                 row_pos = self.xls_write_row(
                     ws, row_pos, row_data, account_cell_style)
                 row_pos += 2
+        ws.set_column(0,nbr_columns,20)
 
 
 partner_ledger_xls('report.account.account_report_partner_ledger_xls',
