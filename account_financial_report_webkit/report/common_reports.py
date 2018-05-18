@@ -546,7 +546,9 @@ SELECT l.id AS id,
             i.id AS invoice_id,
             i.type AS invoice_type,
             i.number AS invoice_number,
-            l.date_maturity
+            l.date_maturity,
+            l.check_number AS check_number,
+            l.emp_as400_ref AS emp_as400_ref
 FROM account_move_line l
     JOIN account_move m on (l.move_id=m.id)
     LEFT JOIN res_currency c on (l.currency_id=c.id)
