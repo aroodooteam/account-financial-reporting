@@ -28,13 +28,14 @@ from openerp.addons.report_xls.utils import rowcol_to_cell
 from openerp.addons.account_financial_report_webkit.report.general_ledger \
     import GeneralLedgerWebkit
 from openerp.tools.translate import _
-# import logging
-# _logger = logging.getLogger(__name__)
+import logging
+_logger = logging.getLogger(__name__)
 
 _column_sizes = [
     ('date', 12),
     ('period', 12),
     ('move', 20),
+    ('emp_as400_ref', 20),
     ('journal', 12),
     ('account_code', 12),
     ('partner', 30),
@@ -52,7 +53,7 @@ class general_ledger_xls(report_xls):
     column_sizes = [x[1] for x in _column_sizes]
 
     def generate_xls_report(self, _p, _xs, data, objects, wb):
-
+        _logger.info('\n=== data = %s' % data)
         ws = wb.add_worksheet(_p.report_name[:31])
         ws.panes_frozen = True
         ws.remove_splits = True
@@ -95,7 +96,7 @@ class general_ledger_xls(report_xls):
         c_specs = [
             ('coa', 2, 0, 'text', _('Chart of Account')),
             ('fy', 1, 0, 'text', _('Fiscal Year')),
-            ('df', 3, 0, 'text', _p.filter_form(data) ==
+            ('df', 4, 0, 'text', _p.filter_form(data) ==
              'filter_date' and _('Dates Filter') or _('Periods Filter')),
             ('af', 1, 0, 'text', _('Accounts Filter')),
             ('tm', 2, 0, 'text',  _('Target Moves')),
@@ -124,7 +125,7 @@ class general_ledger_xls(report_xls):
         else:
             df += _p.stop_period.name if _p.stop_period else u''
         c_specs += [
-            ('df', 3, 0, 'text', df),
+            ('df', 4, 0, 'text', df),
             ('af', 1, 0, 'text', _p.accounts(data) and ', '.join(
                 [account.code for account in _p.accounts(data)]) or _('All')),
             ('tm', 2, 0, 'text', _p.display_target_move(data)),
@@ -159,6 +160,7 @@ class general_ledger_xls(report_xls):
             ('date', 1, 0, 'text', _('Date'), None, c_hdr_cell_style),
             ('period', 1, 0, 'text', _('Period'), None, c_hdr_cell_style),
             ('move', 1, 0, 'text', _('Entry'), None, c_hdr_cell_style),
+            ('emp_as400_ref', 1, 0, 'text', _('Reference'), None, c_hdr_cell_style),
             ('journal', 1, 0, 'text', _('Journal'), None, c_hdr_cell_style),
             ('account_code', 1, 0, 'text',
              _('Account'), None, c_hdr_cell_style),
@@ -225,7 +227,7 @@ class general_ledger_xls(report_xls):
                     cumul_balance_curr = init_balance.get(
                         'init_balance_currency') or 0.0
                     c_specs = [('empty%s' % x, 1, 0, 'text', None)
-                               for x in range(6)]
+                               for x in range(7)]
                     c_specs += [
                         ('init_bal', 1, 0, 'text', _('Initial Balance')),
                         ('counterpart', 1, 0, 'text', None),
@@ -248,6 +250,7 @@ class general_ledger_xls(report_xls):
                         ws, row_pos, row_data, c_init_cell_style)
 
                 for line in _p['ledger_lines'][account.id]:
+                    _logger.info('\n=== line = %s' %line)
 
                     cumul_debit += line.get('debit') or 0.0
                     cumul_credit += line.get('credit') or 0.0
@@ -272,7 +275,8 @@ class general_ledger_xls(report_xls):
                     c_specs += [
                         ('period', 1, 0, 'text',
                          line.get('period_code') or ''),
-                        ('move', 1, 0, 'text', line.get('move_name') or ''),
+                        ('move', 1, 0, 'text', line.get('move_name') or '' + ' - ' + line.get('emp_as400_ref') or ''),
+                        ('as400_ref', 1, 0, 'text', line.get('emp_as400_ref') or ''),
                         ('journal', 1, 0, 'text', line.get('jcode') or ''),
                         ('account_code', 1, 0, 'text', account.code),
                         ('partner', 1, 0, 'text',
@@ -311,7 +315,7 @@ class general_ledger_xls(report_xls):
                 balance_credit = rowcol_to_cell(row_pos, 9)
                 balance_formula = balance_debit + '-' + balance_credit
                 c_specs = [
-                    ('acc_title', 7, 0, 'text',
+                    ('acc_title', 8, 0, 'text',
                      ' - '.join([account.code, account.name])),
                     ('cum_bal', 1, 0, 'text',
                      _('Cumulated Balance on Account'),
